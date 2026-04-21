@@ -62,13 +62,19 @@ async def update_status(id, status):
         current_status, banned_at = row
         now = str(datetime.datetime.now())
 
-        if status == "banned" and not banned_at:
+        # ✅ only mark banned_at when it FIRST becomes banned
+        if status == "banned" and current_status != "banned":
             await db.execute("""
-            UPDATE accounts SET status=?, banned_at=?, last_checked=? WHERE id=?
+            UPDATE accounts 
+            SET status=?, banned_at=?, last_checked=? 
+            WHERE id=?
             """, (status, now, now, id))
+
         else:
             await db.execute("""
-            UPDATE accounts SET status=?, last_checked=? WHERE id=?
+            UPDATE accounts 
+            SET status=?, last_checked=? 
+            WHERE id=?
             """, (status, now, id))
 
         await db.commit()
