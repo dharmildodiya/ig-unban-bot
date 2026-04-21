@@ -1,6 +1,7 @@
 import asyncio
 import datetime
 import random
+import re
 
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
@@ -15,6 +16,23 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
 
+# ✅ EXTRACT USERNAMES (bulk support)
+def extract_usernames(text):
+    usernames = set()
+    parts = text.split()
+
+    for part in parts:
+        if "instagram.com/" in part:
+            part = part.split("instagram.com/")[-1]
+
+        part = part.replace("@", "").strip("/")
+
+        if part:
+            usernames.add(part)
+
+    return list(usernames)
+
+
 # ✅ COMMANDS
 
 @dp.message(Command("start"))
@@ -22,14 +40,27 @@ async def start(msg: types.Message):
     await msg.answer("🚀 Unban Monitor Bot Active")
 
 
+@dp.message(Command("cancel"))
+async def cancel(msg: types.Message):
+    await msg.answer("❌ Operation cancelled.")
+
+
 @dp.message(Command("add"))
 async def add(msg: types.Message):
     try:
-        username = msg.text.split(" ")[1].replace("@", "")
-        await add_account(username, msg.from_user.id)
-        await msg.answer(f"✅ Tracking @{username}")
+        text = msg.text.replace("/add", "").strip()
+        usernames = extract_usernames(text)
+
+        added = []
+
+        for username in usernames:
+            await add_account(username, msg.from_user.id)
+            added.append(f"@{username}")
+
+        await msg.answer("✅ Tracking:\n" + "\n".join(added))
+
     except:
-        await msg.answer("Usage: /add username")
+        await msg.answer("Usage:\n/add username1 username2\nor paste links")
 
 
 @dp.message(Command("remove"))
@@ -77,9 +108,18 @@ async def monitor():
             log("Checking accounts...")
 
             accounts = await get_accounts()
+            now = datetime.datetime.now()
 
             for acc in accounts:
                 id, username, user_id, status, added_at, last_checked, unbanned_at, notified = acc
+
+                # 🧹 AUTO DELETE AFTER 7 DAYS
+                if added_at:
+                    added_time = datetime.datetime.fromisoformat(added_at)
+                    if (now - added_time).days >= 7:
+                        await delete_account(id)
+                        log(f"{username} deleted after 7 days")
+                        continue
 
                 result = await check_account(username)
 
@@ -99,7 +139,10 @@ async def monitor():
                         await send_unban(user_id, username, start_time)
                         await mark_unbanned(id)
 
-                        log(f"{username} unbanned")
+                        # ❌ AUTO REMOVE AFTER UNBAN
+                        await delete_account(id)
+
+                        log(f"{username} unbanned & removed")
 
         except Exception as e:
             print("Monitor error:", e)
@@ -116,8 +159,8 @@ async def main():
     await init_db()
 
     await asyncio.gather(
-        monitor(),              # background checker
-        dp.start_polling(bot)   # telegram bot
+        monitor(),
+        dp.start_polling(bot)
     )
 
 
