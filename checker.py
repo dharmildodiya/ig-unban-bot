@@ -51,7 +51,7 @@ def analyze_response(status, text):
 
 async def check_account(username):
     url = f"https://www.instagram.com/{username}/"
-    proxy = None
+    proxy = proxy_manager.get_proxy()
 
     headers = {
         "User-Agent": random.choice(HEADERS_LIST),
@@ -62,11 +62,19 @@ async def check_account(username):
         timeout = aiohttp.ClientTimeout(total=10)
 
         async with aiohttp.ClientSession(timeout=timeout) as session:
-            async with session.get(url, headers=headers, proxy=proxy) as res:
+            async with session.get(
+                url,
+                headers=headers,
+                proxy=proxy,
+                allow_redirects=True
+            ) as res:
+
                 text = await res.text()
+
+                print(f"[{username}] status: {res.status} proxy: {proxy}")
+
                 return analyze_response(res.status, text)
 
-    except asyncio.TimeoutError:
-        return "timeout"
-    except:
+    except Exception as e:
+        print(f"[{username}] ERROR:", e)
         return "error"
