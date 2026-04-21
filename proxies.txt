@@ -1,1 +1,9 @@
 http://260411Nd75d-resi-any:h7Of55wirlKmgrn@proxy-jet.io:1010
+http://260411Nd75d-resi-IN:h7Of55wirlKmgrn@n.proxy-jet.io:1010
+http://260411Nd75d-resi-AU:h7Of55wirlKmgrn@proxy-jet.io:1010
+http://260411Nd75d-resi-US:h7Of55wirlKmgrn@ca.proxy-jet.io:1010
+http://260411Nd75d-resi-UK:h7Of55wirlKmgrn@eu.proxy-jet.io:1010
+http://260411Nd75d-resi-EG:h7Of55wirlKmgrn@proxy-jet.io:1010
+http://260411Nd75d-resi-ZA:h7Of55wirlKmgrn@proxy-jet.io:1010
+http://260411Nd75d-resi-PH:h7Of55wirlKmgrn@in.proxy-jet.io:1010
+http://260411Nd75d-resi-TR:h7Of55wirlKmgrn@eu.proxy-jet.io:1010
