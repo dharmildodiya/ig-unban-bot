@@ -16,7 +16,6 @@ bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
 
-# ✅ EXTRACT USERNAMES (bulk support)
 def extract_usernames(text):
     usernames = set()
     parts = text.split()
@@ -33,8 +32,6 @@ def extract_usernames(text):
     return list(usernames)
 
 
-# ✅ COMMANDS
-
 @dp.message(Command("start"))
 async def start(msg: types.Message):
     await msg.answer("🚀 Unban Monitor Bot Active")
@@ -42,35 +39,27 @@ async def start(msg: types.Message):
 
 @dp.message(Command("cancel"))
 async def cancel(msg: types.Message):
-    await msg.answer("❌ Operation cancelled.")
+    await msg.answer("❌ Cancelled")
 
 
 @dp.message(Command("add"))
 async def add(msg: types.Message):
-    try:
-        text = msg.text.replace("/add", "").strip()
-        usernames = extract_usernames(text)
+    text = msg.text.replace("/add", "").strip()
+    usernames = extract_usernames(text)
 
-        added = []
+    added = []
+    for username in usernames:
+        await add_account(username, msg.from_user.id)
+        added.append(f"@{username}")
 
-        for username in usernames:
-            await add_account(username, msg.from_user.id)
-            added.append(f"@{username}")
-
-        await msg.answer("✅ Tracking:\n" + "\n".join(added))
-
-    except:
-        await msg.answer("Usage:\n/add username1 username2\nor paste links")
+    await msg.answer("✅ Tracking:\n" + "\n".join(added))
 
 
 @dp.message(Command("remove"))
 async def remove(msg: types.Message):
-    try:
-        username = msg.text.split(" ")[1].replace("@", "")
-        await remove_account(username, msg.from_user.id)
-        await msg.answer(f"❌ Removed @{username}")
-    except:
-        await msg.answer("Usage: /remove username")
+    username = msg.text.split(" ")[1].replace("@", "")
+    await remove_account(username, msg.from_user.id)
+    await msg.answer(f"❌ Removed @{username}")
 
 
 @dp.message(Command("list"))
@@ -83,8 +72,6 @@ async def list_accounts(msg: types.Message):
     text = "\n".join([f"@{a[1]} | {a[3]}" for a in accounts])
     await msg.answer(text)
 
-
-# 🔁 CONFIRMATION SYSTEM
 
 async def confirm_active(username):
     confirmations = 0
@@ -99,59 +86,44 @@ async def confirm_active(username):
     return confirmations >= 2
 
 
-# 🔍 MONITOR ENGINE
-
 async def monitor():
     while True:
         try:
             print("🔍 Checking accounts...")
-            log("Checking accounts...")
-
             accounts = await get_accounts()
             now = datetime.datetime.now()
 
             for acc in accounts:
-                id, username, user_id, status, added_at, last_checked, unbanned_at, notified = acc
+                id, username, user_id, status, added_at, banned_at, last_checked, unbanned_at, notified = acc
 
-                # 🧹 AUTO DELETE AFTER 7 DAYS
+                # delete after 7 days
                 if added_at:
                     added_time = datetime.datetime.fromisoformat(added_at)
                     if (now - added_time).days >= 7:
                         await delete_account(id)
-                        log(f"{username} deleted after 7 days")
                         continue
 
                 result = await check_account(username)
-
-                print(f"{username} → {result}")
-                log(f"{username} → {result}")
-
                 await update_status(id, result)
 
-                # 🚀 UNBAN DETECTION
+                print(f"{username} → {result}")
+
                 if status in ["banned", "unknown"] and result == "active" and not notified:
 
                     is_real = await confirm_active(username)
 
                     if is_real:
-                        start_time = datetime.datetime.fromisoformat(added_at)
+                        start_time = datetime.datetime.fromisoformat(banned_at) if banned_at else datetime.datetime.fromisoformat(added_at)
 
                         await send_unban(user_id, username, start_time)
                         await mark_unbanned(id)
-
-                        # ❌ AUTO REMOVE AFTER UNBAN
                         await delete_account(id)
-
-                        log(f"{username} unbanned & removed")
 
         except Exception as e:
             print("Monitor error:", e)
-            log(f"Monitor error: {str(e)}")
 
         await asyncio.sleep(CHECK_INTERVAL)
 
-
-# 🚀 MAIN
 
 async def main():
     print("🔥 BOT STARTED")
