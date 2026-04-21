@@ -1,0 +1,4 @@
+.env
+data.db
+logs.txt
+__pycache__/
