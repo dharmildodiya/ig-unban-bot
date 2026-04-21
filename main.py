@@ -56,11 +56,25 @@ async def add(msg: types.Message):
     usernames = extract_usernames(text)
 
     added = []
-    for username in usernames:
-        await add_account(username, msg.from_user.id)
-        added.append(f"@{username}")
+    skipped = []
 
-    await msg.answer("✅ Tracking:\n" + "\n".join(added))
+    for username in usernames:
+        result = await add_account(username, msg.from_user.id)
+
+        if result:
+            added.append(f"@{username}")
+        else:
+            skipped.append(f"@{username}")
+
+    response = ""
+
+    if added:
+        response += "✅ Added:\n" + "\n".join(added) + "\n\n"
+
+    if skipped:
+        response += "⚠️ Already Exists:\n" + "\n".join(skipped)
+
+    await msg.answer(response.strip())
 
 
 @dp.message(Command("remove"))
@@ -97,14 +111,12 @@ async def confirm_active(username):
     for _ in range(3):
         await asyncio.sleep(random.uniform(2, 4))
         result = await check_account(username)
-
         if result == "active":
             confirmations += 1
-
     return confirmations >= 2
 
 
-# 🔍 MONITOR ENGINE
+# 🔍 MONITOR
 
 async def monitor():
     while True:
@@ -116,7 +128,7 @@ async def monitor():
             for acc in accounts:
                 id, username, user_id, status, added_at, banned_at, last_checked, unbanned_at, notified = acc
 
-                # 🧹 delete after 7 days
+                # delete after 7 days
                 if added_at:
                     added_time = datetime.datetime.fromisoformat(added_at)
                     if (now - added_time).days >= 7:
@@ -128,7 +140,7 @@ async def monitor():
 
                 print(f"{username} → {result}")
 
-                # 🚀 ONLY if it was banned before
+                # ONLY if previously banned
                 if banned_at and status == "banned" and result == "active" and not notified:
 
                     is_real = await confirm_active(username)
@@ -151,6 +163,9 @@ async def monitor():
 async def main():
     print("🔥 BOT STARTED")
     await init_db()
+
+    # 🔥 FIX TELEGRAM CONFLICT
+    await bot.delete_webhook(drop_pending_updates=True)
 
     await asyncio.gather(
         monitor(),
