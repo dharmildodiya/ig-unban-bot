@@ -142,7 +142,10 @@ async def monitor():
                     is_real = await confirm_active(username)
 
                     if is_real:
-                        start_time = datetime.datetime.fromisoformat(banned_at) if banned_at else datetime.datetime.fromisoformat(added_at)
+                        if banned_at:
+    start_time = datetime.datetime.fromisoformat(banned_at)
+else:
+    continue  # ❌ skip if never detected as banned
 
                         await send_unban(user_id, username, start_time)
                         await mark_unbanned(id)
