@@ -13,7 +13,7 @@ from notifier import send_unban
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
-# 🔐 ALLOWED USERS (ONLY THESE CAN USE BOT)
+# 🔐 ALLOWED USERS
 ALLOWED_USERS = [7352118213, 1284631357]
 
 
@@ -45,14 +45,6 @@ async def start(msg: types.Message):
         return await msg.answer("❌ Access Denied")
 
     await msg.answer("🚀 Unban Monitor Bot Active")
-
-
-@dp.message(Command("cancel"))
-async def cancel(msg: types.Message):
-    if not is_allowed(msg.from_user.id):
-        return
-
-    await msg.answer("❌ Cancelled")
 
 
 @dp.message(Command("add"))
@@ -124,7 +116,7 @@ async def monitor():
             for acc in accounts:
                 id, username, user_id, status, added_at, banned_at, last_checked, unbanned_at, notified = acc
 
-                # 🧹 AUTO DELETE AFTER 7 DAYS
+                # 🧹 delete after 7 days
                 if added_at:
                     added_time = datetime.datetime.fromisoformat(added_at)
                     if (now - added_time).days >= 7:
@@ -136,16 +128,13 @@ async def monitor():
 
                 print(f"{username} → {result}")
 
-                # 🚀 UNBAN DETECTION
-                if status in ["banned", "unknown"] and result == "active" and not notified:
+                # 🚀 ONLY if it was banned before
+                if banned_at and status == "banned" and result == "active" and not notified:
 
                     is_real = await confirm_active(username)
 
                     if is_real:
-                        if banned_at:
-    start_time = datetime.datetime.fromisoformat(banned_at)
-else:
-    continue  # ❌ skip if never detected as banned
+                        start_time = datetime.datetime.fromisoformat(banned_at)
 
                         await send_unban(user_id, username, start_time)
                         await mark_unbanned(id)
