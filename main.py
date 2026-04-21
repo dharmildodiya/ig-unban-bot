@@ -1,7 +1,6 @@
 import asyncio
 import datetime
 import random
-import re
 
 from aiogram import Bot, Dispatcher, types
 from aiogram.filters import Command
@@ -10,7 +9,6 @@ from config import BOT_TOKEN, CHECK_INTERVAL
 from database import *
 from checker import check_account
 from notifier import send_unban
-from utils import log
 
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
@@ -75,14 +73,11 @@ async def list_accounts(msg: types.Message):
 
 async def confirm_active(username):
     confirmations = 0
-
     for _ in range(3):
         await asyncio.sleep(random.uniform(2, 4))
         result = await check_account(username)
-
         if result == "active":
             confirmations += 1
-
     return confirmations >= 2
 
 
@@ -127,7 +122,6 @@ async def monitor():
 
 async def main():
     print("🔥 BOT STARTED")
-
     await init_db()
 
     await asyncio.gather(
