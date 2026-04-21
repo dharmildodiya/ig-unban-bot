@@ -23,11 +23,22 @@ async def init_db():
 
 async def add_account(username, user_id):
     async with aiosqlite.connect(DB) as db:
+        cursor = await db.execute(
+            "SELECT 1 FROM accounts WHERE username=? AND user_id=?",
+            (username, user_id)
+        )
+        exists = await cursor.fetchone()
+
+        if exists:
+            return False
+
         await db.execute("""
         INSERT INTO accounts (username, user_id, status, added_at)
         VALUES (?, ?, 'unknown', ?)
         """, (username, user_id, str(datetime.datetime.now())))
+
         await db.commit()
+        return True
 
 
 async def remove_account(username, user_id):
@@ -54,28 +65,21 @@ async def get_user_accounts(user_id):
         return await cursor.fetchall()
 
 
-# 🔥 FIXED LOGIC
 async def update_status(id, status):
     async with aiosqlite.connect(DB) as db:
-        cursor = await db.execute("SELECT status, banned_at FROM accounts WHERE id=?", (id,))
+        cursor = await db.execute("SELECT status FROM accounts WHERE id=?", (id,))
         row = await cursor.fetchone()
 
-        current_status, banned_at = row
+        current_status = row[0]
         now = str(datetime.datetime.now())
 
-        # mark banned_at ONLY first time it becomes banned
         if status == "banned" and current_status != "banned":
             await db.execute("""
-            UPDATE accounts 
-            SET status=?, banned_at=?, last_checked=? 
-            WHERE id=?
+            UPDATE accounts SET status=?, banned_at=?, last_checked=? WHERE id=?
             """, (status, now, now, id))
-
         else:
             await db.execute("""
-            UPDATE accounts 
-            SET status=?, last_checked=? 
-            WHERE id=?
+            UPDATE accounts SET status=?, last_checked=? WHERE id=?
             """, (status, now, id))
 
         await db.commit()
