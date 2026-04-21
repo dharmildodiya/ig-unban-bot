@@ -53,7 +53,7 @@ async def list_accounts(msg: types.Message):
     await msg.answer(text)
 
 
-# 🔁 CONFIRMATION SYSTEM (prevents false alerts)
+# 🔁 CONFIRMATION SYSTEM
 
 async def confirm_active(username):
     confirmations = 0
@@ -68,20 +68,27 @@ async def confirm_active(username):
     return confirmations >= 2
 
 
-# 🔄 MONITOR ENGINE
+# 🔍 MONITOR ENGINE
 
 async def monitor():
     while True:
         try:
+            print("🔍 Checking accounts...")
+            log("Checking accounts...")
+
             accounts = await get_accounts()
 
             for acc in accounts:
                 id, username, user_id, status, added_at, last_checked, unbanned_at, notified = acc
 
                 result = await check_account(username)
+
+                print(f"{username} → {result}")
+                log(f"{username} → {result}")
+
                 await update_status(id, result)
 
-                # 🔥 Detect unban
+                # 🚀 UNBAN DETECTION
                 if status in ["banned", "unknown"] and result == "active" and not notified:
 
                     is_real = await confirm_active(username)
@@ -95,21 +102,23 @@ async def monitor():
                         log(f"{username} unbanned")
 
         except Exception as e:
+            print("Monitor error:", e)
             log(f"Monitor error: {str(e)}")
 
         await asyncio.sleep(CHECK_INTERVAL)
 
 
-# 🚀 MAIN START
+# 🚀 MAIN
 
 async def main():
+    print("🔥 BOT STARTED")
+
     await init_db()
 
-    # start background monitor
-    asyncio.create_task(monitor())
-
-    # start bot polling
-    await dp.start_polling(bot)
+    await asyncio.gather(
+        monitor(),              # background checker
+        dp.start_polling(bot)   # telegram bot
+    )
 
 
 if __name__ == "__main__":
