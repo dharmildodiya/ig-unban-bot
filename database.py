@@ -12,6 +12,7 @@ async def init_db():
             user_id INTEGER,
             status TEXT,
             added_at TEXT,
+            banned_at TEXT,
             last_checked TEXT,
             unbanned_at TEXT,
             notified INTEGER DEFAULT 0
@@ -55,19 +56,27 @@ async def get_user_accounts(user_id):
 
 async def update_status(id, status):
     async with aiosqlite.connect(DB) as db:
-        await db.execute("""
-        UPDATE accounts 
-        SET status=?, last_checked=? 
-        WHERE id=?
-        """, (status, str(datetime.datetime.now()), id))
+        cursor = await db.execute("SELECT status, banned_at FROM accounts WHERE id=?", (id,))
+        row = await cursor.fetchone()
+
+        current_status, banned_at = row
+        now = str(datetime.datetime.now())
+
+        if status == "banned" and not banned_at:
+            await db.execute("""
+            UPDATE accounts SET status=?, banned_at=?, last_checked=? WHERE id=?
+            """, (status, now, now, id))
+        else:
+            await db.execute("""
+            UPDATE accounts SET status=?, last_checked=? WHERE id=?
+            """, (status, now, id))
+
         await db.commit()
 
 
 async def mark_unbanned(id):
     async with aiosqlite.connect(DB) as db:
         await db.execute("""
-        UPDATE accounts 
-        SET unbanned_at=?, notified=1 
-        WHERE id=?
+        UPDATE accounts SET unbanned_at=?, notified=1 WHERE id=?
         """, (str(datetime.datetime.now()), id))
         await db.commit()
