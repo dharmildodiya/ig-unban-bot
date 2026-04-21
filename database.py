@@ -54,6 +54,7 @@ async def get_user_accounts(user_id):
         return await cursor.fetchall()
 
 
+# 🔥 FIXED LOGIC
 async def update_status(id, status):
     async with aiosqlite.connect(DB) as db:
         cursor = await db.execute("SELECT status, banned_at FROM accounts WHERE id=?", (id,))
@@ -62,7 +63,7 @@ async def update_status(id, status):
         current_status, banned_at = row
         now = str(datetime.datetime.now())
 
-        # ✅ only mark banned_at when it FIRST becomes banned
+        # mark banned_at ONLY first time it becomes banned
         if status == "banned" and current_status != "banned":
             await db.execute("""
             UPDATE accounts 
