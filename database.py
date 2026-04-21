@@ -61,3 +61,8 @@ async def mark_unbanned(id):
         WHERE id=?
         """, (str(datetime.datetime.now()), id))
         await db.commit()
+        
+async def delete_account(id):
+    async with aiosqlite.connect(DB) as db:
+        await db.execute("DELETE FROM accounts WHERE id=?", (id,))
+        await db.commit()
