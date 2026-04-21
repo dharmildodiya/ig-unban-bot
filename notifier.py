@@ -14,13 +14,9 @@ async def send_unban(user_id, username, start_time):
 
     duration = now - start_time
 
-    message = f"""🏆 <b>Account Recovered</b> ✅
+    message = f"""Account Recovered | @{username} 🏆✅
+⏱ Time Taken: {str(duration).split('.')[0]}
+Unbanned at {now.strftime('%Y-%m-%d %I:%M:%S %p IST')}
+https://instagram.com/{username}"""
 
-@{username}
-⏱ {str(duration).split('.')[0]}
-🕒 {now.strftime('%I:%M %p • %d %b')}
-
-instagram.com/{username}
-"""
-
-    await bot.send_message(user_id, message, parse_mode="HTML")
+    await bot.send_message(user_id, message)
