@@ -19,6 +19,7 @@ async def init_db():
         """)
         await db.commit()
 
+
 async def add_account(username, user_id):
     async with aiosqlite.connect(DB) as db:
         await db.execute("""
@@ -27,22 +28,30 @@ async def add_account(username, user_id):
         """, (username, user_id, str(datetime.datetime.now())))
         await db.commit()
 
+
 async def remove_account(username, user_id):
     async with aiosqlite.connect(DB) as db:
-        await db.execute("""
-        DELETE FROM accounts WHERE username=? AND user_id=?
-        """, (username, user_id))
+        await db.execute("DELETE FROM accounts WHERE username=? AND user_id=?", (username, user_id))
         await db.commit()
+
+
+async def delete_account(id):
+    async with aiosqlite.connect(DB) as db:
+        await db.execute("DELETE FROM accounts WHERE id=?", (id,))
+        await db.commit()
+
 
 async def get_accounts():
     async with aiosqlite.connect(DB) as db:
         cursor = await db.execute("SELECT * FROM accounts")
         return await cursor.fetchall()
 
+
 async def get_user_accounts(user_id):
     async with aiosqlite.connect(DB) as db:
         cursor = await db.execute("SELECT * FROM accounts WHERE user_id=?", (user_id,))
         return await cursor.fetchall()
+
 
 async def update_status(id, status):
     async with aiosqlite.connect(DB) as db:
@@ -53,6 +62,7 @@ async def update_status(id, status):
         """, (status, str(datetime.datetime.now()), id))
         await db.commit()
 
+
 async def mark_unbanned(id):
     async with aiosqlite.connect(DB) as db:
         await db.execute("""
@@ -60,9 +70,4 @@ async def mark_unbanned(id):
         SET unbanned_at=?, notified=1 
         WHERE id=?
         """, (str(datetime.datetime.now()), id))
-        await db.commit()
-        
-async def delete_account(id):
-    async with aiosqlite.connect(DB) as db:
-        await db.execute("DELETE FROM accounts WHERE id=?", (id,))
         await db.commit()
