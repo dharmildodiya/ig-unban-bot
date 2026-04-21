@@ -13,6 +13,13 @@ from notifier import send_unban
 bot = Bot(token=BOT_TOKEN)
 dp = Dispatcher()
 
+# 🔐 ALLOWED USERS (ONLY THESE CAN USE BOT)
+ALLOWED_USERS = [7352118213, 1284631357]
+
+
+def is_allowed(user_id):
+    return user_id in ALLOWED_USERS
+
 
 def extract_usernames(text):
     usernames = set()
@@ -30,18 +37,29 @@ def extract_usernames(text):
     return list(usernames)
 
 
+# ✅ COMMANDS
+
 @dp.message(Command("start"))
 async def start(msg: types.Message):
+    if not is_allowed(msg.from_user.id):
+        return await msg.answer("❌ Access Denied")
+
     await msg.answer("🚀 Unban Monitor Bot Active")
 
 
 @dp.message(Command("cancel"))
 async def cancel(msg: types.Message):
+    if not is_allowed(msg.from_user.id):
+        return
+
     await msg.answer("❌ Cancelled")
 
 
 @dp.message(Command("add"))
 async def add(msg: types.Message):
+    if not is_allowed(msg.from_user.id):
+        return
+
     text = msg.text.replace("/add", "").strip()
     usernames = extract_usernames(text)
 
@@ -55,13 +73,22 @@ async def add(msg: types.Message):
 
 @dp.message(Command("remove"))
 async def remove(msg: types.Message):
-    username = msg.text.split(" ")[1].replace("@", "")
-    await remove_account(username, msg.from_user.id)
-    await msg.answer(f"❌ Removed @{username}")
+    if not is_allowed(msg.from_user.id):
+        return
+
+    try:
+        username = msg.text.split(" ")[1].replace("@", "")
+        await remove_account(username, msg.from_user.id)
+        await msg.answer(f"❌ Removed @{username}")
+    except:
+        await msg.answer("Usage: /remove username")
 
 
 @dp.message(Command("list"))
 async def list_accounts(msg: types.Message):
+    if not is_allowed(msg.from_user.id):
+        return
+
     accounts = await get_user_accounts(msg.from_user.id)
 
     if not accounts:
@@ -71,15 +98,21 @@ async def list_accounts(msg: types.Message):
     await msg.answer(text)
 
 
+# 🔁 CONFIRMATION SYSTEM
+
 async def confirm_active(username):
     confirmations = 0
     for _ in range(3):
         await asyncio.sleep(random.uniform(2, 4))
         result = await check_account(username)
+
         if result == "active":
             confirmations += 1
+
     return confirmations >= 2
 
+
+# 🔍 MONITOR ENGINE
 
 async def monitor():
     while True:
@@ -91,7 +124,7 @@ async def monitor():
             for acc in accounts:
                 id, username, user_id, status, added_at, banned_at, last_checked, unbanned_at, notified = acc
 
-                # delete after 7 days
+                # 🧹 AUTO DELETE AFTER 7 DAYS
                 if added_at:
                     added_time = datetime.datetime.fromisoformat(added_at)
                     if (now - added_time).days >= 7:
@@ -103,6 +136,7 @@ async def monitor():
 
                 print(f"{username} → {result}")
 
+                # 🚀 UNBAN DETECTION
                 if status in ["banned", "unknown"] and result == "active" and not notified:
 
                     is_real = await confirm_active(username)
@@ -119,6 +153,8 @@ async def monitor():
 
         await asyncio.sleep(CHECK_INTERVAL)
 
+
+# 🚀 MAIN
 
 async def main():
     print("🔥 BOT STARTED")
