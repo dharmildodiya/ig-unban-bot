@@ -1,11 +1,13 @@
 from aiogram import Bot
 from config import BOT_TOKEN
 import datetime
+import pytz
 
 bot = Bot(token=BOT_TOKEN)
 
 async def send_unban(user_id, username, start_time):
-    now = datetime.datetime.now()
+IST = pytz.timezone("Asia/Kolkata")
+now = datetime.datetime.now(IST)
     duration = now - start_time
 
     message = f"""Account Recovered | @{username} 🏆✅
