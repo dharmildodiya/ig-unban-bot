@@ -15,29 +15,35 @@ def analyze_response(status, text):
     score = 0
 
     if status == 200:
-        score += 2
-
-    if '"username"' in text and '"profile_pic_url"' in text:
-        score += 4
-
-    if "profilePage" in text:
         score += 3
 
+    if '"username"' in text:
+        score += 3
+
+    if '"profile_pic_url"' in text:
+        score += 2
+
+    if "profilePage" in text:
+        score += 2
+
     if "Sorry, this page isn't available" in text:
-        score -= 5
+        score -= 6
+
+    if "Page Not Found" in text:
+        score -= 6
 
     if "login" in text.lower():
         score -= 2
 
-    if status == 429:
-        return "rate_limited"
-
     if status == 404:
         return "not_found"
 
-    if score >= 5:
+    if status == 429:
+        return "rate_limited"
+
+    if score >= 6:
         return "active"
-    elif score <= -2:
+    elif score <= -3:
         return "banned"
     else:
         return "uncertain"
