@@ -5,26 +5,22 @@ import pytz
 
 bot = Bot(token=BOT_TOKEN)
 
-
 async def send_unban(user_id, username, start_time):
     IST = pytz.timezone("Asia/Kolkata")
     now = datetime.datetime.now(IST)
 
-    # convert start_time to IST also
     if start_time.tzinfo is None:
         start_time = IST.localize(start_time)
 
     duration = now - start_time
 
-    message = f"""🏆 <b>ACCOUNT RECOVERED</b> ✅
+    message = f"""🏆 <b>Account Recovered</b> ✅
 
-👤 <b>@{username}</b>
+@{username}
+⏱ {str(duration).split('.')[0]}
+🕒 {now.strftime('%I:%M %p • %d %b')}
 
-⏱ <b>Time Taken:</b> {str(duration).split('.')[0]}
-
-🕒 <b>Unbanned At:</b> {now.strftime('%I:%M %p | %d %b %Y')}
-
-🔗 https://instagram.com/{username}
+instagram.com/{username}
 """
 
     await bot.send_message(user_id, message, parse_mode="HTML")
