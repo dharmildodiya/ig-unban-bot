@@ -45,7 +45,7 @@ def analyze_response(status, text):
 
 async def check_account(username):
     url = f"https://www.instagram.com/{username}/"
-    proxy = proxy_manager.get_proxy()
+    proxy = None
 
     headers = {
         "User-Agent": random.choice(HEADERS_LIST),
