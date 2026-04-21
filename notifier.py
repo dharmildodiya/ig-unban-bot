@@ -5,9 +5,14 @@ import pytz
 
 bot = Bot(token=BOT_TOKEN)
 
+
 async def send_unban(user_id, username, start_time):
     IST = pytz.timezone("Asia/Kolkata")
     now = datetime.datetime.now(IST)
+
+    # convert start_time to IST also
+    if start_time.tzinfo is None:
+        start_time = IST.localize(start_time)
 
     duration = now - start_time
 
